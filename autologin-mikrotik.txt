@@ -1,0 +1,4 @@
+:local ip [:pick [:ip address get [:ip addres find interface=wlan1] address] 0 ([:len [:ip address get [:ip addres find interface=wlan1] address]]-3) ];
+:tool fetch mode=https http-header-field="User-Agent: Firefox" http-method=post http-data="username=88720028266@spin2&password=11036754948761" url="https://welcome2.wifi.id/authnew/logi...​\?ipc=$ip&gw_id=WAG-D5-KBL&mac=10:7b:44:31:03:cc&redirect=&wlan=BWRGJ00031-N/TLK-CI-47595:@wifi.id";
+
+:if ([:ping 8.8.8.8 count=5]=0) do={:system script run script1;}
