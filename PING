@@ -1,0 +1,9 @@
+/ip firewall mangle add action=mark-connection chain=prerouting comment=PING connection-rate=\
+    0-128k new-connection-mark=PING passthrough=yes protocol=icmp \
+    src-address-list=Lokal
+/ip firewall mangle add action=mark-connection chain=prerouting dst-port=53 new-connection-mark=\
+    PING passthrough=yes protocol=udp src-address-list=Lokal
+/ip firewall mangle add action=mark-connection chain=prerouting dst-port=53 new-connection-mark=\
+    PING passthrough=yes protocol=tcp src-address-list=Lokal
+/ip firewall mangle add action=mark-packet chain=forward connection-mark=PING new-packet-mark=\
+    Ping-Packet passthrough=no
