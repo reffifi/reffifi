@@ -17,7 +17,7 @@ routing speedtest trafic ke isp tertentu
 /ip firewall nat add action=masquerade chain=srcnat comment=VPN out-interface=ether1 
 
 /ip firewall mangle add action=mark-routing chain=prerouting comment="speedtest to isp 1" \
-    dst-address-list=KONEKSI-VPN dst-port=80,443 new-routing-mark=VPN \
+    dst-address-list=koneksi-vpn dst-port=80,443 new-routing-mark=VPN \
     passthrough=no protocol=tcp src-address-list=private-lokal
     
 /ip route add distance=1 gateway=192.168.1.1 routing-mark=VPN
