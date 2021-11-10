@@ -1,0 +1,57 @@
+/ip firewall mangle add action=jump chain=forward comment=\
+    "===================== Game TCP =====================" connection-bytes=\
+    0-128000 connection-rate=0-128k dst-address-list=!Lokal jump-target=\
+    jump_game_tcp src-address-list=Lokal
+/ip firewall mangle add action=jump chain=jump_game_tcp dst-port=\
+    !0-53,80-90,8002-8081,21-25,2082-2100,5220-5228,5230-5250,50003 \
+    jump-target=jump_game_tcp2 protocol=tcp
+/ip firewall mangle add action=jump chain=jump_game_tcp2 dst-port=\
+    !933,1080,1701,1723,1935,2512,3478,4500,5050,5353,5938,1194-1198,800-900 \
+    jump-target=jump_game_tcp3 protocol=tcp
+/ip firewall mangle add action=jump chain=jump_game_tcp3 dst-port="!6588,7275,8111,8121,8291,8728,\
+    8777,9201,10580,14270,15000,1400-1460,6881-6889" jump-target=\
+    jump_game_tcp4 protocol=tcp
+/ip firewall mangle add action=mark-connection chain=jump_game_tcp4 dst-port="!34953,34965,2467,24\
+    71,858,12779,13145,100-600,9090,3389,6957,8888,6666,8947" \
+    new-connection-mark=games-conn passthrough=yes protocol=tcp
+/ip firewall mangle add action=jump chain=forward comment=\
+    "===================== Game UDP =====================" connection-bytes=\
+    0-128000 connection-rate=0-128k dst-address-list=!Lokal jump-target=\
+    jump_game_udp protocol=udp src-address-list=Lokal
+/ip firewall mangle add action=jump chain=jump_game_udp dst-port=\
+    !0-53,80-90,8001-8081,21-25,2082-2100,5220-5250,3128,100-249 jump-target=\
+    jump_game_udp2 protocol=udp
+/ip firewall mangle add action=jump chain=jump_game_udp2 dst-port=\
+    !933,1080,1701,1723,1935,2512,3478,4500,5050,5353,5938,1194-1198,800-900 \
+    jump-target=jump_game_udp3 protocol=udp
+/ip firewall mangle add action=jump chain=jump_game_udp3 dst-port="!6588,7275,8111,8121,8291,8728,\
+    8777,9201,10580,14270,15000,1400-1460,6881-6889" jump-target=\
+    jump_game_udp4 protocol=udp
+/ip firewall mangle add action=mark-connection chain=jump_game_udp4 dst-port=\
+    !34953,34965,8472,2454,8517,4030,261-600,3389,9090 new-connection-mark=\
+    games-conn passthrough=yes protocol=udp
+/ip firewall mangle add action=mark-packet chain=forward connection-mark=games-conn \
+    new-packet-mark=games_down out-interface-list=LAN passthrough=no
+/ip firewall mangle add action=mark-packet chain=forward connection-mark=games-conn \
+    new-packet-mark=games_up out-interface-list=WAN passthrough=no
+
+
+
+
+/queue type
+add kind=pfifo name=piffo-packet pfifo-limit=5000
+add kind=sfq name="sfq-game [beta]" sfq-allot=15140 sfq-perturb=1000
+add kind=pcq name=Speedtest-download-5Mbps pcq-classifier=dst-address \
+    pcq-dst-address6-mask=64 pcq-rate=10M pcq-src-address6-mask=64
+add kind=pcq name=Speedtest-upload-5Mbps pcq-classifier=src-address \
+    pcq-dst-address6-mask=64 pcq-rate=5M pcq-src-address6-mask=64
+add kind=pcq name=Speedtest-download-10Mbps pcq-classifier=dst-address \
+    pcq-dst-address6-mask=64 pcq-rate=15M pcq-src-address6-mask=64
+add kind=pcq name=Speedtest-upload-10Mbps pcq-classifier=src-address \
+    pcq-dst-address6-mask=64 pcq-rate=5M pcq-src-address6-mask=64
+add kind=pcq name=pcq-download-games pcq-classifier=dst-address,dst-port
+add kind=pcq name=pcq-upload-games pcq-classifier=src-address,src-port
+add kind=pcq name=pcq-download-ggc pcq-classifier=dst-address,dst-port \
+    pcq-rate=789k
+add kind=pcq name=pcq-upload-ggc pcq-classifier=src-address,src-port \
+    pcq-rate=798k
