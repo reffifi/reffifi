@@ -1,0 +1,23 @@
+routing speedtest trafic ke isp tertentu
+
+
+<route ke isp 1>
+
+/ip firewall layer7-protocoladd name=speedtest regexp="^.+(speedtest).*\\\$"
+
+/ip firewall filter add action=add-dst-to-address-list address-list=koneksi-vpn \
+    address-list-timeout=1d chain=forward dst-address-list=!CLIENT+ISP \
+    dst-port=80,443 in-interface-list=LAN layer7-protocol=speedtest protocol=\
+    udp src-address-list=CLIENT+ISP
+/ip firewall filter add action=add-dst-to-address-list address-list=koneksi-vpn \
+    address-list-timeout=1d chain=forward dst-address-list=!CLIENT+ISP \
+    dst-port=80,443 in-interface-list=LAN layer7-protocol=speedtest protocol=\
+    tcp src-address-list=CLIENT+ISP
+    
+/ip firewall nat add action=masquerade chain=srcnat comment=VPN out-interface=ether1 
+
+/ip firewall mangle add action=mark-routing chain=prerouting comment="speedtest to isp 1" \
+    dst-address-list=KONEKSI-VPN dst-port=80,443 new-routing-mark=VPN \
+    passthrough=no protocol=tcp src-address-list=private-lokal
+    
+/ip route add distance=1 gateway=192.168.1.1 routing-mark=VPN
