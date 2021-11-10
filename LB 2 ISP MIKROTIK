@@ -1,0 +1,93 @@
+/interface list
+add name=WAN
+add name=LAN
+/ip hotspot profile
+add dns-name=desa-digital.id hotspot-address=182.1.96.1 html-directory=\
+    flash/hotspot name=hsprof1
+/ip pool
+add name=hs-pool-4 ranges=182.1.96.2-182.1.127.254
+add name=dhcp_pool1 ranges=10.0.0.1-10.21.0.0,10.21.0.2-10.255.255.254
+/ip dhcp-server
+add address-pool=hs-pool-4 disabled=no interface=ether3 lease-time=1h name=\
+    dhcp1
+add address-pool=dhcp_pool1 disabled=no interface=ether5 name=dhcp2
+/ip hotspot
+add address-pool=hs-pool-4 disabled=no interface=ether3 name=hotspot1 \
+    profile=hsprof1
+/interface list member
+add interface=ether1 list=WAN
+add interface=ether2 list=WAN
+add interface=ether3 list=LAN
+add interface=ether5 list=LAN
+add interface=ether4 list=LAN
+/ip address
+add address=192.168.1.150/24 interface=ether1 network=192.168.1.0
+add address=192.168.0.150/24 interface=ether2 network=192.168.0.0
+add address=182.1.96.1/19 interface=ether3 network=182.1.96.0
+add address=10.21.0.1/8 interface=ether5 network=10.0.0.0
+/ip dhcp-server network
+add address=10.0.0.0/8 gateway=10.21.0.1
+add address=182.1.96.0/19 comment="hotspot network" gateway=182.1.96.1
+/ip dns
+set allow-remote-requests=yes servers=192.168.1.1,8.8.8.8,192.168.1.1
+/ip firewall address-list
+add address=10.0.0.0/8 list=CLIENT+ISP
+add address=182.1.96.0/19 list=CLIENT+ISP
+add address=192.168.0.0/24 list=CLIENT+ISP
+add address=192.168.1.0/24 list=CLIENT+ISP
+/ip firewall filter
+add action=passthrough chain=unused-hs-chain comment=\
+    "place hotspot rules here" disabled=yes
+/ip firewall mangle
+add action=accept chain=prerouting comment="BYPASS CLIENT+ISP" \
+    dst-address-list=CLIENT+ISP
+add action=mark-connection chain=input comment="LB PCC" in-interface=ether1 \
+    new-connection-mark=connISP1 passthrough=yes
+add action=mark-connection chain=input in-interface=ether2 \
+    new-connection-mark=connISP2 passthrough=yes
+add action=mark-routing chain=output connection-mark=connISP1 \
+    new-routing-mark=route-ISP1 passthrough=no
+add action=mark-routing chain=output connection-mark=connISP2 \
+    new-routing-mark=route-ISP2 passthrough=no
+add action=mark-connection chain=prerouting dst-address-list=!CLIENT+ISP \
+    dst-address-type=!local new-connection-mark=connISP1 passthrough=yes \
+    per-connection-classifier=both-addresses-and-ports:2/0 src-address-list=\
+    CLIENT+ISP
+add action=mark-connection chain=prerouting dst-address-list=!CLIENT+ISP \
+    dst-address-type=!local new-connection-mark=connISP2 passthrough=yes \
+    per-connection-classifier=both-addresses-and-ports:2/1 src-address-list=\
+    CLIENT+ISP
+add action=mark-routing chain=prerouting connection-mark=connISP1 \
+    dst-address-list=!CLIENT+ISP new-routing-mark=route-ISP1 passthrough=yes \
+    src-address-list=CLIENT+ISP
+add action=mark-routing chain=prerouting connection-mark=connISP2 \
+    dst-address-list=!CLIENT+ISP new-routing-mark=route-ISP2 passthrough=yes \
+    src-address-list=CLIENT+ISP
+/ip firewall nat
+add action=passthrough chain=unused-hs-chain comment=\
+    "place hotspot rules here" disabled=yes
+add action=masquerade chain=srcnat comment="masquerade hotspot network" \
+    src-address=182.1.96.0/19
+add action=masquerade chain=srcnat comment=NAT-ISP-TUNNELS out-interface=\
+    ether1
+add action=masquerade chain=srcnat comment=NAT-ISP-TELKOM out-interface=\
+    ether2
+/ip hotspot user
+add name=admin password=admin
+/ip route
+add check-gateway=ping comment="KE ISP TUNNELS" distance=1 gateway=\
+    192.168.1.1 routing-mark=route-ISP1
+add check-gateway=ping comment="KE ISP TELKOM" distance=1 gateway=192.168.0.1 \
+    routing-mark=route-ISP2
+add distance=1 gateway=192.168.1.1
+add distance=2 gateway=192.168.0.1
+/system clock
+set time-zone-name=Asia/Jakarta
+
+
+keterangan 
+- ether 1 = isp 1 
+- ether 2 = isp 2
+- ether 3 = hotspot ip 182.1.96.1/19
+- ether 4 = tidak dipakai
+- ether 5 = dhcp client (ON) ip 10.21.0.1/8
